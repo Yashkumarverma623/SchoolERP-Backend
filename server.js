@@ -23,12 +23,12 @@ app.use(express.json());
 const mongoURI = process.env.MONGODB_URI
 
 // Routes
-app.use('/api/students', studentRoutes);
-app.use('/api/attendance', attendanceRoutes);
-app.use('/api/timetable', timetableRoutes);
-app.use('/api/fees', feeRoutes);
-app.use('/api/notices', noticeRoutes);
-app.use('/api/dashboard', dashboardRoutes);
+app.use('/students', studentRoutes);
+app.use('/attendance', attendanceRoutes);
+app.use('/timetable', timetableRoutes);
+app.use('/fees', feeRoutes);
+app.use('/notices', noticeRoutes);
+app.use('/dashboard', dashboardRoutes);
 
 mongoose.connect(mongoURI, {
   useNewUrlParser: true,

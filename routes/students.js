@@ -1,9 +1,7 @@
-// routes/students.js
 const express = require('express');
 const { ObjectId } = require('mongodb');
 const router = express.Router();
 
-// Get database connection
 const getDb = () => {
   const { client } = require('../connect');
   return client.db('school-erp');

@@ -12,6 +12,9 @@ const feeRoutes = require('./routes/fees');
 const noticeRoutes = require('./routes/notices');
 const dashboardRoutes = require('./routes/dashboard');
 const examsRoutes = require('./routes/exams');
+const teachersRoutes = require('./routes/teachers');
+const classesRoutes = require('./routes/classes');
+
 
 
 const app = express();
@@ -51,6 +54,10 @@ app.use('/fees', feeRoutes);
 app.use('/notices', noticeRoutes);
 app.use('/dashboard', dashboardRoutes);
 app.use('/exams', examsRoutes);
+app.use('/teachers', teachersRoutes);
+app.use('/classes', classesRoutes);
+
+
 
 mongoose.connect(mongoURI, {
   useNewUrlParser: true,

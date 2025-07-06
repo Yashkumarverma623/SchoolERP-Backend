@@ -13,6 +13,10 @@ router.get('/stats', async (req, res) => {
     
     const totalStudents = await db.collection('students').countDocuments();
     
+    const totalStaff = await db.collection('teachers').countDocuments();
+    
+    const totalClasses = await db.collection('classes').countDocuments();
+    
     const today = new Date();
     const startOfDay = new Date(today.setHours(0, 0, 0, 0));
     const endOfDay = new Date(today.setHours(23, 59, 59, 999));
@@ -34,6 +38,11 @@ router.get('/stats', async (req, res) => {
     ]).toArray();
     
     const pendingFeesCount = await db.collection('fees').countDocuments({ status: 'pending' });
+    
+    const pendingFeesResult = await db.collection('fees').aggregate([
+      { $match: { status: 'pending' } },
+      { $group: { _id: null, total: { $sum: '$amount' } } }
+    ]).toArray();
     
     const overdueFeesCount = await db.collection('fees').countDocuments({ 
       status: 'pending', 
@@ -68,12 +77,15 @@ router.get('/stats', async (req, res) => {
     
     res.json({
       totalStudents,
+      totalStaff,
+      totalClasses,
       attendanceRate,
       presentToday,
       absentToday: todayAttendance.length - presentToday,
       totalFeesAmount: totalFeesResult[0]?.total || 0,
       paidFeesAmount: paidFeesResult[0]?.total || 0,
       pendingFeesCount,
+      pendingFees: pendingFeesResult[0]?.total || 0, 
       overdueFeesCount,
       recentNotices,
       classDistribution: classDistribution.map(item => ({

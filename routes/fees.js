@@ -7,6 +7,108 @@ const getDb = () => {
   return client.db('school-erp');
 };
 
+// Stats routes MUST come before /:id route
+router.get('/stats/summary', async (req, res) => {
+  try {
+    const db = getDb();
+    
+    const totalFees = await db.collection('fees').countDocuments();
+    const paidFees = await db.collection('fees').countDocuments({ status: 'paid' });
+    const pendingFees = await db.collection('fees').countDocuments({ status: 'pending' });
+    const overdueFees = await db.collection('fees').countDocuments({ 
+      status: 'pending', 
+      dueDate: { $lt: new Date() } 
+    });
+    
+    const totalAmountResult = await db.collection('fees').aggregate([
+      { $group: { _id: null, total: { $sum: '$amount' } } }
+    ]).toArray();
+    
+    const paidAmountResult = await db.collection('fees').aggregate([
+      { $match: { status: 'paid' } },
+      { $group: { _id: null, total: { $sum: '$amount' } } }
+    ]).toArray();
+    
+    const totalAmount = totalAmountResult[0]?.total || 0;
+    const paidAmount = paidAmountResult[0]?.total || 0;
+    
+    res.json({
+      totalFees,
+      paidFees,
+      pendingFees,
+      overdueFees,
+      totalAmount,
+      paidAmount,
+      pendingAmount: totalAmount - paidAmount
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+router.get('/stats/class', async (req, res) => {
+  try {
+    const db = getDb();
+    
+    const classStats = await db.collection('fees').aggregate([
+      {
+        $group: {
+          _id: '$className',
+          totalFees: { $sum: 1 },
+          totalAmount: { $sum: '$amount' },
+          paidFees: {
+            $sum: { $cond: [{ $eq: ['$status', 'paid'] }, 1, 0] }
+          },
+          paidAmount: {
+            $sum: { $cond: [{ $eq: ['$status', 'paid'] }, '$amount', 0] }
+          },
+          pendingFees: {
+            $sum: { $cond: [{ $eq: ['$status', 'pending'] }, 1, 0] }
+          },
+          overdueFees: {
+            $sum: { 
+              $cond: [
+                { 
+                  $and: [
+                    { $eq: ['$status', 'pending'] },
+                    { $lt: ['$dueDate', new Date()] }
+                  ]
+                }, 
+                1, 
+                0
+              ]
+            }
+          }
+        }
+      },
+      {
+        $project: {
+          className: '$_id',
+          totalFees: 1,
+          totalAmount: 1,
+          paidFees: 1,
+          paidAmount: 1,
+          pendingFees: 1,
+          pendingAmount: { $subtract: ['$totalAmount', '$paidAmount'] },
+          overdueFees: 1,
+          collectionRate: {
+            $round: [
+              { $multiply: [{ $divide: ['$paidAmount', '$totalAmount'] }, 100] },
+              2
+            ]
+          }
+        }
+      },
+      { $sort: { className: 1 } }
+    ]).toArray();
+    
+    res.json(classStats);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// General routes
 router.get('/', async (req, res) => {
   try {
     const db = getDb();
@@ -38,6 +140,7 @@ router.get('/', async (req, res) => {
   }
 });
 
+// /:id route MUST come after all specific routes
 router.get('/:id', async (req, res) => {
   try {
     const db = getDb();
@@ -155,106 +258,6 @@ router.patch('/:id/pay', async (req, res) => {
     });
   } catch (error) {
     res.status(400).json({ error: error.message });
-  }
-});
-
-router.get('/stats/summary', async (req, res) => {
-  try {
-    const db = getDb();
-    
-    const totalFees = await db.collection('fees').countDocuments();
-    const paidFees = await db.collection('fees').countDocuments({ status: 'paid' });
-    const pendingFees = await db.collection('fees').countDocuments({ status: 'pending' });
-    const overdueFees = await db.collection('fees').countDocuments({ 
-      status: 'pending', 
-      dueDate: { $lt: new Date() } 
-    });
-    
-    const totalAmountResult = await db.collection('fees').aggregate([
-      { $group: { _id: null, total: { $sum: '$amount' } } }
-    ]).toArray();
-    
-    const paidAmountResult = await db.collection('fees').aggregate([
-      { $match: { status: 'paid' } },
-      { $group: { _id: null, total: { $sum: '$amount' } } }
-    ]).toArray();
-    
-    const totalAmount = totalAmountResult[0]?.total || 0;
-    const paidAmount = paidAmountResult[0]?.total || 0;
-    
-    res.json({
-      totalFees,
-      paidFees,
-      pendingFees,
-      overdueFees,
-      totalAmount,
-      paidAmount,
-      pendingAmount: totalAmount - paidAmount
-    });
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-});
-
-router.get('/stats/class', async (req, res) => {
-  try {
-    const db = getDb();
-    
-    const classStats = await db.collection('fees').aggregate([
-      {
-        $group: {
-          _id: '$className',
-          totalFees: { $sum: 1 },
-          totalAmount: { $sum: '$amount' },
-          paidFees: {
-            $sum: { $cond: [{ $eq: ['$status', 'paid'] }, 1, 0] }
-          },
-          paidAmount: {
-            $sum: { $cond: [{ $eq: ['$status', 'paid'] }, '$amount', 0] }
-          },
-          pendingFees: {
-            $sum: { $cond: [{ $eq: ['$status', 'pending'] }, 1, 0] }
-          },
-          overdueFees: {
-            $sum: { 
-              $cond: [
-                { 
-                  $and: [
-                    { $eq: ['$status', 'pending'] },
-                    { $lt: ['$dueDate', new Date()] }
-                  ]
-                }, 
-                1, 
-                0
-              ]
-            }
-          }
-        }
-      },
-      {
-        $project: {
-          className: '$_id',
-          totalFees: 1,
-          totalAmount: 1,
-          paidFees: 1,
-          paidAmount: 1,
-          pendingFees: 1,
-          pendingAmount: { $subtract: ['$totalAmount', '$paidAmount'] },
-          overdueFees: 1,
-          collectionRate: {
-            $round: [
-              { $multiply: [{ $divide: ['$paidAmount', '$totalAmount'] }, 100] },
-              2
-            ]
-          }
-        }
-      },
-      { $sort: { className: 1 } }
-    ]).toArray();
-    
-    res.json(classStats);
-  } catch (error) {
-    res.status(500).json({ error: error.message });
   }
 });
 

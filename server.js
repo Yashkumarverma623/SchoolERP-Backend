@@ -20,13 +20,14 @@ const PORT = process.env.PORT || 5000;
 // CORS configuration
 const corsOptions = {
   origin: [
+    'https://school-erp-frontend-pi.vercel.app',
     'https://schoolerp-backend.onrender.com',
     'http://localhost:3000',
-    'http://localhost:5173', // Default Vite dev server port
-    'http://localhost:4173', // Default Vite preview port
+    'http://localhost:5173',
+    'http://localhost:4173', 
   ],
-  credentials: true, // Allow cookies and auth headers
-  optionsSuccessStatus: 200, // For legacy browser support
+  credentials: true, 
+  optionsSuccessStatus: 200, 
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
   allowedHeaders: [
     'Content-Type',

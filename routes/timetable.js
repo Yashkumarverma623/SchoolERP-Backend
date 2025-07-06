@@ -1,4 +1,3 @@
-routes/timetable.js
 const express = require('express');
 const { ObjectId } = require('mongodb');
 const router = express.Router();
@@ -203,7 +202,6 @@ router.get('/teacher/:teacherId', async (req, res) => {
       .sort({ day: 1, startTime: 1 })
       .toArray();
     
-    Get teacher details
     const teacher = await db.collection('teachers').findOne({ _id: new ObjectId(teacherId) });
     
     res.json({
@@ -223,7 +221,6 @@ router.get('/all/classes', async (req, res) => {
       .sort({ className: 1, day: 1, startTime: 1 })
       .toArray();
     
-    Get teacher details
     const teacherIds = allTimetables.map(entry => new ObjectId(entry.teacherId)).filter(id => id);
     const teachers = await db.collection('teachers').find({ _id: { $in: teacherIds } }).toArray();
     

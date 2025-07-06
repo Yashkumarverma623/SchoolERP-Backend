@@ -1,4 +1,3 @@
-routes/attendance.js
 const express = require('express');
 const { ObjectId } = require('mongodb');
 const router = express.Router();
@@ -28,17 +27,15 @@ router.get('/', async (req, res) => {
     
     const attendanceRecords = await db.collection('attendance').find(filter).toArray();
     
-    Get student details for each attendance record
     const studentIds = attendanceRecords.map(record => new ObjectId(record.studentId));
     const students = await db.collection('students').find({ _id: { $in: studentIds } }).toArray();
     
-    Create a map for quick lookup
     const studentMap = students.reduce((acc, student) => {
       acc[student._id.toString()] = student;
       return acc;
     }, {});
     
-\    const populatedRecords = attendanceRecords.map(record => ({
+ const populatedRecords = attendanceRecords.map(record => ({
       ...record,
       studentData: studentMap[record.studentId.toString()] || null
     }));

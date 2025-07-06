@@ -1,4 +1,3 @@
-routes/fees.js
 const express = require('express');
 const { ObjectId } = require('mongodb');
 const router = express.Router();
@@ -20,11 +19,9 @@ router.get('/', async (req, res) => {
     
     const fees = await db.collection('fees').find(filter).sort({ dueDate: 1 }).toArray();
     
-    Get student details for each fee record
     const studentIds = fees.map(fee => new ObjectId(fee.studentId));
     const students = await db.collection('students').find({ _id: { $in: studentIds } }).toArray();
     
-    Create student map for quick lookup
     const studentMap = students.reduce((acc, student) => {
       acc[student._id.toString()] = student;
       return acc;
@@ -61,7 +58,6 @@ router.get('/:id', async (req, res) => {
   }
 });
 
-Create new fee record
 router.post('/', async (req, res) => {
   try {
     const db = getDb();
@@ -166,7 +162,6 @@ router.get('/stats/summary', async (req, res) => {
   try {
     const db = getDb();
     
-    Get counts
     const totalFees = await db.collection('fees').countDocuments();
     const paidFees = await db.collection('fees').countDocuments({ status: 'paid' });
     const pendingFees = await db.collection('fees').countDocuments({ status: 'pending' });

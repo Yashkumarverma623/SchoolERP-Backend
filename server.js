@@ -17,7 +17,7 @@ const examsRoutes = require('./routes/exams');
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-// CORS configuration
+CORS configuration
 const corsOptions = {
   origin: [
     'https://school-erp-frontend-pi.vercel.app',
@@ -43,7 +43,7 @@ app.use(express.json());
 
 const mongoURI = process.env.MONGODB_URI
 
-// Routes
+Routes
 app.use('/students', studentRoutes);
 app.use('/attendance', attendanceRoutes);
 app.use('/timetable', timetableRoutes);

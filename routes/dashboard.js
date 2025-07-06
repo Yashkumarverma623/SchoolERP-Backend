@@ -1,23 +1,19 @@
-// routes/dashboard.js
+routes/dashboard.js
 const express = require('express');
 const { ObjectId } = require('mongodb');
 const router = express.Router();
 
-// Get database connection
 const getDb = () => {
   const { client } = require('../connect');
   return client.db('school-erp');
 };
 
-// Get dashboard statistics
 router.get('/stats', async (req, res) => {
   try {
     const db = getDb();
     
-    // Get total students
     const totalStudents = await db.collection('students').countDocuments();
     
-    // Get today's attendance
     const today = new Date();
     const startOfDay = new Date(today.setHours(0, 0, 0, 0));
     const endOfDay = new Date(today.setHours(23, 59, 59, 999));
@@ -29,7 +25,6 @@ router.get('/stats', async (req, res) => {
     const presentToday = todayAttendance.filter(record => record.status === 'present').length;
     const attendanceRate = todayAttendance.length > 0 ? Math.round((presentToday / todayAttendance.length) * 100) : 0;
     
-    // Get fee collection stats
     const totalFeesResult = await db.collection('fees').aggregate([
       { $group: { _id: null, total: { $sum: '$amount' } } }
     ]).toArray();
@@ -39,28 +34,23 @@ router.get('/stats', async (req, res) => {
       { $group: { _id: null, total: { $sum: '$amount' } } }
     ]).toArray();
     
-    // Get pending fees count
     const pendingFeesCount = await db.collection('fees').countDocuments({ status: 'pending' });
     
-    // Get overdue fees count
     const overdueFeesCount = await db.collection('fees').countDocuments({ 
       status: 'pending', 
       dueDate: { $lt: new Date() } 
     });
     
-    // Get recent notices
     const recentNotices = await db.collection('notices').find({ isActive: true })
       .sort({ createdAt: -1 })
       .limit(5)
       .toArray();
     
-    // Get class-wise student distribution
     const classDistribution = await db.collection('students').aggregate([
       { $group: { _id: '$class', count: { $sum: 1 } } },
       { $sort: { _id: 1 } }
     ]).toArray();
     
-    // Get monthly fee collection trend
     const monthlyFeeCollection = await db.collection('fees').aggregate([
       { $match: { status: 'paid', paidDate: { $exists: true } } },
       {
@@ -103,19 +93,16 @@ router.get('/stats', async (req, res) => {
   }
 });
 
-// Get recent activities
 router.get('/activities', async (req, res) => {
   try {
     const db = getDb();
     const { limit = 10 } = req.query;
     
-    // Get recent attendance records
     const recentAttendance = await db.collection('attendance').find()
       .sort({ createdAt: -1 })
       .limit(parseInt(limit))
       .toArray();
     
-    // Get student details for attendance records
     const studentIds = recentAttendance.map(record => new ObjectId(record.studentId));
     const students = await db.collection('students').find({ _id: { $in: studentIds } }).toArray();
     
@@ -124,13 +111,11 @@ router.get('/activities', async (req, res) => {
       return acc;
     }, {});
     
-    // Get recent fee payments
     const recentPayments = await db.collection('fees').find({ status: 'paid' })
       .sort({ paidDate: -1 })
       .limit(parseInt(limit))
       .toArray();
     
-    // Get student details for fee payments
     const paymentStudentIds = recentPayments.map(payment => new ObjectId(payment.studentId));
     const paymentStudents = await db.collection('students').find({ _id: { $in: paymentStudentIds } }).toArray();
     
@@ -139,7 +124,6 @@ router.get('/activities', async (req, res) => {
       return acc;
     }, {});
     
-    // Format activities
     const attendanceActivities = recentAttendance.map(record => {
       const student = studentMap[record.studentId.toString()];
       return {
@@ -162,7 +146,6 @@ router.get('/activities', async (req, res) => {
       };
     });
     
-    // Combine and sort activities
     const allActivities = [...attendanceActivities, ...paymentActivities]
       .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))
       .slice(0, parseInt(limit));
@@ -174,7 +157,6 @@ router.get('/activities', async (req, res) => {
   }
 });
 
-// Get attendance overview
 router.get('/attendance-overview', async (req, res) => {
   try {
     const db = getDb();
@@ -219,7 +201,6 @@ router.get('/attendance-overview', async (req, res) => {
   }
 });
 
-// Get fee collection overview
 router.get('/fee-overview', async (req, res) => {
   try {
     const db = getDb();

@@ -1,15 +1,13 @@
-// routes/fees.js
+routes/fees.js
 const express = require('express');
 const { ObjectId } = require('mongodb');
 const router = express.Router();
 
-// Get database connection
 const getDb = () => {
   const { client } = require('../connect');
   return client.db('school-erp');
 };
 
-// Get all fees
 router.get('/', async (req, res) => {
   try {
     const db = getDb();
@@ -22,17 +20,16 @@ router.get('/', async (req, res) => {
     
     const fees = await db.collection('fees').find(filter).sort({ dueDate: 1 }).toArray();
     
-    // Get student details for each fee record
+    Get student details for each fee record
     const studentIds = fees.map(fee => new ObjectId(fee.studentId));
     const students = await db.collection('students').find({ _id: { $in: studentIds } }).toArray();
     
-    // Create student map for quick lookup
+    Create student map for quick lookup
     const studentMap = students.reduce((acc, student) => {
       acc[student._id.toString()] = student;
       return acc;
     }, {});
     
-    // Populate student data
     const populatedFees = fees.map(fee => ({
       ...fee,
       studentData: studentMap[fee.studentId.toString()] || null
@@ -44,7 +41,6 @@ router.get('/', async (req, res) => {
   }
 });
 
-// Get fee by ID
 router.get('/:id', async (req, res) => {
   try {
     const db = getDb();
@@ -54,7 +50,6 @@ router.get('/:id', async (req, res) => {
       return res.status(404).json({ error: 'Fee record not found' });
     }
     
-    // Get student details
     const student = await db.collection('students').findOne({ _id: new ObjectId(fee.studentId) });
     
     res.json({
@@ -66,7 +61,7 @@ router.get('/:id', async (req, res) => {
   }
 });
 
-// Create new fee record
+Create new fee record
 router.post('/', async (req, res) => {
   try {
     const db = getDb();
@@ -81,7 +76,6 @@ router.post('/', async (req, res) => {
     const result = await db.collection('fees').insertOne(feeData);
     const fee = await db.collection('fees').findOne({ _id: result.insertedId });
     
-    // Get student details
     const student = await db.collection('students').findOne({ _id: new ObjectId(fee.studentId) });
     
     res.status(201).json({
@@ -93,7 +87,6 @@ router.post('/', async (req, res) => {
   }
 });
 
-// Update fee record
 router.put('/:id', async (req, res) => {
   try {
     const db = getDb();
@@ -120,7 +113,6 @@ router.put('/:id', async (req, res) => {
       return res.status(404).json({ error: 'Fee record not found' });
     }
     
-    // Get student details
     const student = await db.collection('students').findOne({ _id: new ObjectId(result.value.studentId) });
     
     res.json({
@@ -132,7 +124,6 @@ router.put('/:id', async (req, res) => {
   }
 });
 
-// Mark fee as paid
 router.patch('/:id/pay', async (req, res) => {
   try {
     const db = getDb();
@@ -160,7 +151,6 @@ router.patch('/:id/pay', async (req, res) => {
       return res.status(404).json({ error: 'Fee record not found' });
     }
     
-    // Get student details
     const student = await db.collection('students').findOne({ _id: new ObjectId(result.value.studentId) });
     
     res.json({
@@ -172,12 +162,11 @@ router.patch('/:id/pay', async (req, res) => {
   }
 });
 
-// Get fee statistics
 router.get('/stats/summary', async (req, res) => {
   try {
     const db = getDb();
     
-    // Get counts
+    Get counts
     const totalFees = await db.collection('fees').countDocuments();
     const paidFees = await db.collection('fees').countDocuments({ status: 'paid' });
     const pendingFees = await db.collection('fees').countDocuments({ status: 'pending' });
@@ -186,7 +175,6 @@ router.get('/stats/summary', async (req, res) => {
       dueDate: { $lt: new Date() } 
     });
     
-    // Get amount aggregations
     const totalAmountResult = await db.collection('fees').aggregate([
       { $group: { _id: null, total: { $sum: '$amount' } } }
     ]).toArray();
@@ -213,7 +201,6 @@ router.get('/stats/summary', async (req, res) => {
   }
 });
 
-// Get class-wise fee summary
 router.get('/stats/class', async (req, res) => {
   try {
     const db = getDb();
@@ -276,7 +263,6 @@ router.get('/stats/class', async (req, res) => {
   }
 });
 
-// Delete fee record
 router.delete('/:id', async (req, res) => {
   try {
     const db = getDb();

@@ -7,7 +7,6 @@ const getDb = () => {
   return client.db('school-erp');
 };
 
-// Get all exams
 router.get('/', async (req, res) => {
   try {
     const db = getDb();
@@ -18,7 +17,6 @@ router.get('/', async (req, res) => {
   }
 });
 
-// Get exam by ID
 router.get('/:id', async (req, res) => {
   try {
     const db = getDb();
@@ -34,7 +32,6 @@ router.get('/:id', async (req, res) => {
   }
 });
 
-// Create new exam
 router.post('/', async (req, res) => {
   try {
     const db = getDb();
@@ -53,7 +50,6 @@ router.post('/', async (req, res) => {
   }
 });
 
-// Update exam
 router.put('/:id', async (req, res) => {
   try {
     const db = getDb();
@@ -78,7 +74,6 @@ router.put('/:id', async (req, res) => {
   }
 });
 
-// Delete exam
 router.delete('/:id', async (req, res) => {
   try {
     const db = getDb();
@@ -94,7 +89,6 @@ router.delete('/:id', async (req, res) => {
   }
 });
 
-// Get exams by class
 router.get('/class/:className', async (req, res) => {
   try {
     const db = getDb();
@@ -105,7 +99,6 @@ router.get('/class/:className', async (req, res) => {
   }
 });
 
-// Get all results
 router.get('/results/all', async (req, res) => {
   try {
     const db = getDb();
@@ -116,7 +109,6 @@ router.get('/results/all', async (req, res) => {
   }
 });
 
-// Get results by student ID
 router.get('/results/student/:studentId', async (req, res) => {
   try {
     const db = getDb();
@@ -129,7 +121,6 @@ router.get('/results/student/:studentId', async (req, res) => {
   }
 });
 
-// Get results by exam ID
 router.get('/results/exam/:examId', async (req, res) => {
   try {
     const db = getDb();
@@ -142,7 +133,6 @@ router.get('/results/exam/:examId', async (req, res) => {
   }
 });
 
-// Add exam result
 router.post('/results', async (req, res) => {
   try {
     const db = getDb();
@@ -163,7 +153,6 @@ router.post('/results', async (req, res) => {
   }
 });
 
-// Update exam result
 router.put('/results/:id', async (req, res) => {
   try {
     const db = getDb();
@@ -195,7 +184,6 @@ router.put('/results/:id', async (req, res) => {
   }
 });
 
-// Delete exam result
 router.delete('/results/:id', async (req, res) => {
   try {
     const db = getDb();
@@ -211,7 +199,6 @@ router.delete('/results/:id', async (req, res) => {
   }
 });
 
-// Generate report card for student
 router.get('/report-card/:studentId', async (req, res) => {
   try {
     const db = getDb();

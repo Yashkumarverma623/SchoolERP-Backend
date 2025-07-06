@@ -1,15 +1,13 @@
-// routes/timetable.js
+routes/timetable.js
 const express = require('express');
 const { ObjectId } = require('mongodb');
 const router = express.Router();
 
-// Get database connection
 const getDb = () => {
   const { client } = require('../connect');
   return client.db('school-erp');
 };
 
-// Get timetable by class and day
 router.get('/', async (req, res) => {
   try {
     const db = getDb();
@@ -23,7 +21,6 @@ router.get('/', async (req, res) => {
       .sort({ day: 1, startTime: 1 })
       .toArray();
     
-    // Get teacher details for each timetable entry
     const teacherIds = timetable.map(entry => new ObjectId(entry.teacherId)).filter(id => id);
     const teachers = await db.collection('teachers').find({ _id: { $in: teacherIds } }).toArray();
     
@@ -43,7 +40,6 @@ router.get('/', async (req, res) => {
   }
 });
 
-// Get timetable by ID
 router.get('/:id', async (req, res) => {
   try {
     const db = getDb();
@@ -53,7 +49,6 @@ router.get('/:id', async (req, res) => {
       return res.status(404).json({ error: 'Timetable entry not found' });
     }
     
-    // Get teacher details
     let teacherData = null;
     if (timetable.teacherId) {
       teacherData = await db.collection('teachers').findOne({ _id: new ObjectId(timetable.teacherId) });
@@ -68,13 +63,11 @@ router.get('/:id', async (req, res) => {
   }
 });
 
-// Create new timetable entry
 router.post('/', async (req, res) => {
   try {
     const db = getDb();
     const { className, day, startTime, endTime, teacherId } = req.body;
     
-    // Check for time conflicts
     const conflictingEntry = await db.collection('timetable').findOne({
       className: className,
       day: day,
@@ -102,7 +95,6 @@ router.post('/', async (req, res) => {
     const result = await db.collection('timetable').insertOne(timetableData);
     const timetable = await db.collection('timetable').findOne({ _id: result.insertedId });
     
-    // Get teacher details
     let teacherData = null;
     if (timetable.teacherId) {
       teacherData = await db.collection('teachers').findOne({ _id: new ObjectId(timetable.teacherId) });
@@ -117,7 +109,6 @@ router.post('/', async (req, res) => {
   }
 });
 
-// Update timetable entry
 router.put('/:id', async (req, res) => {
   try {
     const db = getDb();
@@ -140,7 +131,6 @@ router.put('/:id', async (req, res) => {
       return res.status(404).json({ error: 'Timetable entry not found' });
     }
     
-    // Get teacher details
     let teacherData = null;
     if (result.value.teacherId) {
       teacherData = await db.collection('teachers').findOne({ _id: new ObjectId(result.value.teacherId) });
@@ -155,7 +145,6 @@ router.put('/:id', async (req, res) => {
   }
 });
 
-// Delete timetable entry
 router.delete('/:id', async (req, res) => {
   try {
     const db = getDb();
@@ -171,7 +160,6 @@ router.delete('/:id', async (req, res) => {
   }
 });
 
-// Get weekly timetable for a class
 router.get('/weekly/:className', async (req, res) => {
   try {
     const db = getDb();
@@ -181,7 +169,6 @@ router.get('/weekly/:className', async (req, res) => {
       .sort({ day: 1, startTime: 1 })
       .toArray();
     
-    // Get teacher details
     const teacherIds = weeklyTimetable.map(entry => new ObjectId(entry.teacherId)).filter(id => id);
     const teachers = await db.collection('teachers').find({ _id: { $in: teacherIds } }).toArray();
     
@@ -190,7 +177,6 @@ router.get('/weekly/:className', async (req, res) => {
       return acc;
     }, {});
     
-    // Group by day
     const groupedTimetable = weeklyTimetable.reduce((acc, entry) => {
       if (!acc[entry.day]) {
         acc[entry.day] = [];
@@ -208,7 +194,6 @@ router.get('/weekly/:className', async (req, res) => {
   }
 });
 
-// Get teacher's timetable
 router.get('/teacher/:teacherId', async (req, res) => {
   try {
     const db = getDb();
@@ -218,7 +203,7 @@ router.get('/teacher/:teacherId', async (req, res) => {
       .sort({ day: 1, startTime: 1 })
       .toArray();
     
-    // Get teacher details
+    Get teacher details
     const teacher = await db.collection('teachers').findOne({ _id: new ObjectId(teacherId) });
     
     res.json({
@@ -230,7 +215,6 @@ router.get('/teacher/:teacherId', async (req, res) => {
   }
 });
 
-// Get all classes with their timetables
 router.get('/all/classes', async (req, res) => {
   try {
     const db = getDb();
@@ -239,7 +223,7 @@ router.get('/all/classes', async (req, res) => {
       .sort({ className: 1, day: 1, startTime: 1 })
       .toArray();
     
-    // Get teacher details
+    Get teacher details
     const teacherIds = allTimetables.map(entry => new ObjectId(entry.teacherId)).filter(id => id);
     const teachers = await db.collection('teachers').find({ _id: { $in: teacherIds } }).toArray();
     
@@ -248,7 +232,6 @@ router.get('/all/classes', async (req, res) => {
       return acc;
     }, {});
     
-    // Group by class
     const groupedByClass = allTimetables.reduce((acc, entry) => {
       if (!acc[entry.className]) {
         acc[entry.className] = {};

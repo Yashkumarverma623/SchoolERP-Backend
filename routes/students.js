@@ -7,7 +7,6 @@ const getDb = () => {
   return client.db('school-erp');
 };
 
-// Get all students
 router.get('/', async (req, res) => {
   try {
     const db = getDb();
@@ -18,7 +17,6 @@ router.get('/', async (req, res) => {
   }
 });
 
-// Get student by ID
 router.get('/:id', async (req, res) => {
   try {
     const db = getDb();
@@ -34,7 +32,6 @@ router.get('/:id', async (req, res) => {
   }
 });
 
-// Create new student
 router.post('/', async (req, res) => {
   try {
     const db = getDb();
@@ -53,7 +50,6 @@ router.post('/', async (req, res) => {
   }
 });
 
-// Update student
 router.put('/:id', async (req, res) => {
   try {
     const db = getDb();
@@ -78,7 +74,6 @@ router.put('/:id', async (req, res) => {
   }
 });
 
-// Delete student
 router.delete('/:id', async (req, res) => {
   try {
     const db = getDb();
@@ -94,7 +89,6 @@ router.delete('/:id', async (req, res) => {
   }
 });
 
-// Get students by class
 router.get('/class/:className', async (req, res) => {
   try {
     const db = getDb();
@@ -105,7 +99,6 @@ router.get('/class/:className', async (req, res) => {
   }
 });
 
-// Search students
 router.get('/search/:query', async (req, res) => {
   try {
     const db = getDb();

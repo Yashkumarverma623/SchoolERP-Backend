@@ -1,15 +1,13 @@
-// routes/notices.js
+routes/notices.js
 const express = require('express');
 const { ObjectId } = require('mongodb');
 const router = express.Router();
 
-// Get database connection
 const getDb = () => {
   const { client } = require('../connect');
   return client.db('school-erp');
 };
 
-// Get all notices
 router.get('/', async (req, res) => {
   try {
     const db = getDb();
@@ -31,7 +29,6 @@ router.get('/', async (req, res) => {
   }
 });
 
-// Get notice by ID
 router.get('/:id', async (req, res) => {
   try {
     const db = getDb();
@@ -47,7 +44,6 @@ router.get('/:id', async (req, res) => {
   }
 });
 
-// Create new notice
 router.post('/', async (req, res) => {
   try {
     const db = getDb();
@@ -67,7 +63,6 @@ router.post('/', async (req, res) => {
   }
 });
 
-// Update notice
 router.put('/:id', async (req, res) => {
   try {
     const db = getDb();
@@ -92,7 +87,6 @@ router.put('/:id', async (req, res) => {
   }
 });
 
-// Toggle notice active status
 router.patch('/:id/toggle', async (req, res) => {
   try {
     const db = getDb();
@@ -114,7 +108,6 @@ router.patch('/:id/toggle', async (req, res) => {
   }
 });
 
-// Delete notice
 router.delete('/:id', async (req, res) => {
   try {
     const db = getDb();
@@ -130,7 +123,6 @@ router.delete('/:id', async (req, res) => {
   }
 });
 
-// Get notices by type
 router.get('/type/:type', async (req, res) => {
   try {
     const db = getDb();
@@ -147,7 +139,6 @@ router.get('/type/:type', async (req, res) => {
   }
 });
 
-// Get notices for specific class
 router.get('/class/:className', async (req, res) => {
   try {
     const db = getDb();

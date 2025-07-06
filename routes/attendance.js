@@ -1,15 +1,13 @@
-// routes/attendance.js
+routes/attendance.js
 const express = require('express');
 const { ObjectId } = require('mongodb');
 const router = express.Router();
 
-// Get database connection
 const getDb = () => {
   const { client } = require('../connect');
   return client.db('school-erp');
 };
 
-// Get attendance by date
 router.get('/', async (req, res) => {
   try {
     const db = getDb();
@@ -30,23 +28,21 @@ router.get('/', async (req, res) => {
     
     const attendanceRecords = await db.collection('attendance').find(filter).toArray();
     
-    // Get student details for each attendance record
+    Get student details for each attendance record
     const studentIds = attendanceRecords.map(record => new ObjectId(record.studentId));
     const students = await db.collection('students').find({ _id: { $in: studentIds } }).toArray();
     
-    // Create a map for quick lookup
+    Create a map for quick lookup
     const studentMap = students.reduce((acc, student) => {
       acc[student._id.toString()] = student;
       return acc;
     }, {});
     
-    // Populate student data
-    const populatedRecords = attendanceRecords.map(record => ({
+\    const populatedRecords = attendanceRecords.map(record => ({
       ...record,
       studentData: studentMap[record.studentId.toString()] || null
     }));
     
-    // Group by class and calculate stats
     const groupedAttendance = populatedRecords.reduce((acc, record) => {
       const className = record.className;
       if (!acc[className]) {
@@ -74,7 +70,6 @@ router.get('/', async (req, res) => {
   }
 });
 
-// Get attendance records with details
 router.get('/records', async (req, res) => {
   try {
     const db = getDb();
@@ -94,7 +89,6 @@ router.get('/records', async (req, res) => {
     
     const attendanceRecords = await db.collection('attendance').find(filter).toArray();
     
-    // Get student details
     const studentIds = attendanceRecords.map(record => new ObjectId(record.studentId));
     const students = await db.collection('students').find({ _id: { $in: studentIds } }).toArray();
     
@@ -114,7 +108,6 @@ router.get('/records', async (req, res) => {
   }
 });
 
-// Mark attendance
 router.post('/', async (req, res) => {
   try {
     const db = getDb();
@@ -135,7 +128,6 @@ router.post('/', async (req, res) => {
   }
 });
 
-// Mark bulk attendance
 router.post('/bulk', async (req, res) => {
   try {
     const db = getDb();
@@ -156,7 +148,6 @@ router.post('/bulk', async (req, res) => {
   }
 });
 
-// Update attendance
 router.put('/:id', async (req, res) => {
   try {
     const db = getDb();
@@ -189,7 +180,6 @@ router.put('/:id', async (req, res) => {
   }
 });
 
-// Delete attendance record
 router.delete('/:id', async (req, res) => {
   try {
     const db = getDb();
@@ -205,7 +195,6 @@ router.delete('/:id', async (req, res) => {
   }
 });
 
-// Get attendance statistics
 router.get('/stats', async (req, res) => {
   try {
     const db = getDb();

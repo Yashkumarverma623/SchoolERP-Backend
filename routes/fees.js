@@ -7,7 +7,162 @@ const getDb = () => {
   return client.db('school-erp');
 };
 
-// Stats routes MUST come before /:id route
+router.get('/', async (req, res) => {
+  try {
+    const db = getDb();
+    const { status, class: className, studentId } = req.query;
+    let filter = {};
+    
+    if (status) filter.status = status;
+    if (className) filter.className = className;
+    if (studentId) filter.studentId = new ObjectId(studentId);
+    
+    const fees = await db.collection('fees').find(filter).sort({ dueDate: 1 }).toArray();
+    
+    const studentIds = fees.map(fee => new ObjectId(fee.studentId));
+    const students = await db.collection('students').find({ _id: { $in: studentIds } }).toArray();
+    
+    const studentMap = students.reduce((acc, student) => {
+      acc[student._id.toString()] = student;
+      return acc;
+    }, {});
+    
+    const populatedFees = fees.map(fee => ({
+      ...fee,
+      studentData: studentMap[fee.studentId.toString()] || null
+    }));
+    
+    res.json(populatedFees);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+router.get('/:id', async (req, res) => {
+  try {
+    const db = getDb();
+    const fee = await db.collection('fees').findOne({ _id: new ObjectId(req.params.id) });
+    
+    if (!fee) {
+      return res.status(404).json({ error: 'Fee record not found' });
+    }
+    
+    const student = await db.collection('students').findOne({ _id: new ObjectId(fee.studentId) });
+    
+    res.json({
+      ...fee,
+      studentData: student || null
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+router.post('/', async (req, res) => {
+  try {
+    const db = getDb();
+    const feeData = {
+      ...req.body,
+      studentId: new ObjectId(req.body.studentId),
+      dueDate: new Date(req.body.dueDate),
+      createdAt: new Date(),
+      updatedAt: new Date()
+    };
+    
+    const result = await db.collection('fees').insertOne(feeData);
+    const fee = await db.collection('fees').findOne({ _id: result.insertedId });
+    
+    const student = await db.collection('students').findOne({ _id: new ObjectId(fee.studentId) });
+    
+    res.status(201).json({
+      ...fee,
+      studentData: student || null
+    });
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
+router.put('/:id', async (req, res) => {
+  try {
+    const db = getDb();
+    const updateData = {
+      ...req.body,
+      updatedAt: new Date()
+    };
+    
+    if (req.body.studentId) {
+      updateData.studentId = new ObjectId(req.body.studentId);
+    }
+    
+    if (req.body.dueDate) {
+      updateData.dueDate = new Date(req.body.dueDate);
+    }
+    
+    if (req.body.paidDate) {
+      updateData.paidDate = new Date(req.body.paidDate);
+    }
+    
+    const result = await db.collection('fees').findOneAndUpdate(
+      { _id: new ObjectId(req.params.id) },
+      { $set: updateData },
+      { returnDocument: 'after' }
+    );
+    
+    if (!result) {
+      return res.status(404).json({ error: 'Fee record not found' });
+    }
+    
+    const student = await db.collection('students').findOne({ _id: new ObjectId(result.studentId) });
+    
+    res.json({
+      ...result,
+      studentData: student || null
+    });
+  } catch (error) {
+    console.error('Error updating fee:', error);
+    res.status(400).json({ error: error.message });
+  }
+});
+
+router.patch('/:id/pay', async (req, res) => {
+  try {
+    const db = getDb();
+    const { paymentMethod, transactionId, paidAmount } = req.body;
+    
+    const updateData = {
+      status: 'paid',
+      paidDate: new Date(),
+      paymentMethod,
+      transactionId,
+      updatedAt: new Date()
+    };
+    
+    if (paidAmount) {
+      updateData.paidAmount = paidAmount;
+    }
+    
+    const result = await db.collection('fees').findOneAndUpdate(
+      { _id: new ObjectId(req.params.id) },
+      { $set: updateData },
+      { returnDocument: 'after' }
+    );
+    
+    if (!result.value) {
+      return res.status(404).json({ error: 'Fee record not found' });
+    }
+    
+    const student = await db.collection('students').findOne({ _id: new ObjectId(result.value.studentId) });
+    
+    res.json({
+      ...result.value,
+      studentData: student || null
+    });
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
 router.get('/stats/summary', async (req, res) => {
   try {
     const db = getDb();
@@ -105,159 +260,6 @@ router.get('/stats/class', async (req, res) => {
     res.json(classStats);
   } catch (error) {
     res.status(500).json({ error: error.message });
-  }
-});
-
-// General routes
-router.get('/', async (req, res) => {
-  try {
-    const db = getDb();
-    const { status, class: className, studentId } = req.query;
-    let filter = {};
-    
-    if (status) filter.status = status;
-    if (className) filter.className = className;
-    if (studentId) filter.studentId = new ObjectId(studentId);
-    
-    const fees = await db.collection('fees').find(filter).sort({ dueDate: 1 }).toArray();
-    
-    const studentIds = fees.map(fee => new ObjectId(fee.studentId));
-    const students = await db.collection('students').find({ _id: { $in: studentIds } }).toArray();
-    
-    const studentMap = students.reduce((acc, student) => {
-      acc[student._id.toString()] = student;
-      return acc;
-    }, {});
-    
-    const populatedFees = fees.map(fee => ({
-      ...fee,
-      studentData: studentMap[fee.studentId.toString()] || null
-    }));
-    
-    res.json(populatedFees);
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-});
-
-// /:id route MUST come after all specific routes
-router.get('/:id', async (req, res) => {
-  try {
-    const db = getDb();
-    const fee = await db.collection('fees').findOne({ _id: new ObjectId(req.params.id) });
-    
-    if (!fee) {
-      return res.status(404).json({ error: 'Fee record not found' });
-    }
-    
-    const student = await db.collection('students').findOne({ _id: new ObjectId(fee.studentId) });
-    
-    res.json({
-      ...fee,
-      studentData: student || null
-    });
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-});
-
-router.post('/', async (req, res) => {
-  try {
-    const db = getDb();
-    const feeData = {
-      ...req.body,
-      studentId: new ObjectId(req.body.studentId),
-      dueDate: new Date(req.body.dueDate),
-      createdAt: new Date(),
-      updatedAt: new Date()
-    };
-    
-    const result = await db.collection('fees').insertOne(feeData);
-    const fee = await db.collection('fees').findOne({ _id: result.insertedId });
-    
-    const student = await db.collection('students').findOne({ _id: new ObjectId(fee.studentId) });
-    
-    res.status(201).json({
-      ...fee,
-      studentData: student || null
-    });
-  } catch (error) {
-    res.status(400).json({ error: error.message });
-  }
-});
-
-router.put('/:id', async (req, res) => {
-  try {
-    const db = getDb();
-    const updateData = {
-      ...req.body,
-      updatedAt: new Date()
-    };
-    
-    if (req.body.studentId) {
-      updateData.studentId = new ObjectId(req.body.studentId);
-    }
-    
-    if (req.body.dueDate) {
-      updateData.dueDate = new Date(req.body.dueDate);
-    }
-    
-    const result = await db.collection('fees').findOneAndUpdate(
-      { _id: new ObjectId(req.params.id) },
-      { $set: updateData },
-      { returnDocument: 'after' }
-    );
-    
-    if (!result.value) {
-      return res.status(404).json({ error: 'Fee record not found' });
-    }
-    
-    const student = await db.collection('students').findOne({ _id: new ObjectId(result.value.studentId) });
-    
-    res.json({
-      ...result.value,
-      studentData: student || null
-    });
-  } catch (error) {
-    res.status(400).json({ error: error.message });
-  }
-});
-
-router.patch('/:id/pay', async (req, res) => {
-  try {
-    const db = getDb();
-    const { paymentMethod, transactionId, paidAmount } = req.body;
-    
-    const updateData = {
-      status: 'paid',
-      paidDate: new Date(),
-      paymentMethod,
-      transactionId,
-      updatedAt: new Date()
-    };
-    
-    if (paidAmount) {
-      updateData.paidAmount = paidAmount;
-    }
-    
-    const result = await db.collection('fees').findOneAndUpdate(
-      { _id: new ObjectId(req.params.id) },
-      { $set: updateData },
-      { returnDocument: 'after' }
-    );
-    
-    if (!result.value) {
-      return res.status(404).json({ error: 'Fee record not found' });
-    }
-    
-    const student = await db.collection('students').findOne({ _id: new ObjectId(result.value.studentId) });
-    
-    res.json({
-      ...result.value,
-      studentData: student || null
-    });
-  } catch (error) {
-    res.status(400).json({ error: error.message });
   }
 });
 
